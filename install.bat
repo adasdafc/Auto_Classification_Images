@@ -1,0 +1,1 @@
+pyinstaller -y -D -i .\LOGO.ico ACImage.py --noconsole --windowed -p Auto_Classification_Images.py --hidden-import python38.dll --add-data "python38.dll;_internal"
