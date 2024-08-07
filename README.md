@@ -1,0 +1,2 @@
+# Auto_Classification_Images
+对图像和相对应json文件进行平分
