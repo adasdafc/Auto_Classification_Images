@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, \
     QWidget, QTextEdit, QHBoxLayout, QProgressBar
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QTimer
-from Auto_Classification_Images import split_images
+from Auto_Classification_Images import split_images, Create_top_level_folder
 
 class AutoClassificationImage(QMainWindow):
     folder_dropped = pyqtSignal(str)
@@ -57,6 +57,10 @@ class AutoClassificationImage(QMainWindow):
         central_widget.setLayout(self.main_layout)
         self.setCentralWidget(central_widget)
 
+    def on_start_button_click(self):
+        new_folder_path = create_folder()
+    # 在 UI 程序中绑定 on_start_button_click 函数到 start_button 的点击事件
+
     def drag_enter_event(self, event):
         if event.mimeData().hasUrls():
             event.accept()
@@ -71,6 +75,7 @@ class AutoClassificationImage(QMainWindow):
             self.folder_dropped.emit(src_folder)
 
     def start_classification(self):
+
         src_folder = self.src_folder_text.text()
         num_folders = int(self.num_folders_input.text())
         if src_folder and num_folders > 0:
@@ -83,12 +88,14 @@ class AutoClassificationImage(QMainWindow):
             self.timer.timeout.connect(self.update_progress)
             self.timer.start()
 
-            split_images(src_folder, "assit/init/output_folders", num_folders, self.update_progress)
+            top_level_folder = "asset/init/"
+            top_level_folder = Create_top_level_folder(top_level_folder)
+            split_images(src_folder, top_level_folder, num_folders, self.update_progress)
 
             self.timer.stop()
             self.progress_bar.setValue(100)
             self.log_text.append("图像分类完成!\n")
-            self.log_text.append("文件已存储至：assit/init/output_folders")
+            self.log_text.append(f"文件已存储至：{top_level_folder}")
         else:
             self.log_text.append("请输入有效的源文件夹和目标文件夹数量。")
 
@@ -98,6 +105,6 @@ class AutoClassificationImage(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = AutoClassificationImage()
-    window.setWindowTitle(window.windowTitle() + "------Version0.0.2")
+    window.setWindowTitle(window.windowTitle() + "------Version0.0.3")
     window.show()
     sys.exit(app.exec_())
