@@ -59,31 +59,31 @@ def split_images(src_folder, dest_folder_path, num_dest_folders, progress_callba
     total_files = len(os.listdir(src_folder))
     current_progress = 0
 
-    for file_name in os.listdir(src_folder):
-        file_type = distinguish_json_image(file_name)
+    image_files = [f for f in os.listdir(src_folder) if distinguish_json_image(f) == "image"]
+    json_files = [f for f in os.listdir(src_folder) if distinguish_json_image(f) == "json"]
+
+    for i, file_name in enumerate(image_files):
         src_path = os.path.join(src_folder, file_name)
-        if file_type == "image":
-            dest_folder = dest_folders[random.randint(0, num_folders - 1)]
-            dest_path = os.path.join(dest_folder, file_name)
-            shutil.copy(src_path, dest_path)
-        elif file_type == "json":
-            # 找到同名的图像文件,并将JSON文件放到对应的文件夹中
-            for image_file in os.listdir(src_folder):
-                if image_file.endswith(".jpg") or image_file.endswith(".png"):
-                    image_base_name = os.path.splitext(image_file)[0]
-                    json_base_name = os.path.splitext(file_name)[0]
-                    if image_base_name == json_base_name:
-                        for i, dest_folder in enumerate(dest_folders):
-                            if image_file in os.listdir(dest_folder):
-                                dest_path = os.path.join(dest_folder, file_name)
-                                shutil.copy(src_path, dest_path)
-                                break
-        current_progress += 1
-        if progress_callback:
-            progress_callback(int(current_progress / total_files * 100))
+        dest_folder = dest_folders[i // (len(image_files) // num_folders)]
+        dest_path = os.path.join(dest_folder, file_name)
+        shutil.copy(src_path, dest_path)
+
+    for file_name in json_files:
+        src_path = os.path.join(src_folder, file_name)
+        for image_file in image_files:
+            image_base_name = os.path.splitext(image_file)[0]
+            json_base_name = os.path.splitext(file_name)[0]
+            if image_base_name == json_base_name:
+                for i, dest_folder in enumerate(dest_folders):
+                    if image_file in os.listdir(dest_folder):
+                        dest_path = os.path.join(dest_folder, file_name)
+                        shutil.copy(src_path, dest_path)
+                        break
+
+    current_progress = total_files
+    if progress_callback:
+        progress_callback(100)
     print(f"图像文件和JSON文件已成功分割到 {dest_folder_path}中的{num_folders} 个文件夹中.")
-
-
 def create_copy(src_folder, dest_folder_path, num_dest_folders):
     """创建文件夹并分配图像"""
     split_images(src_folder, dest_folder_path, num_dest_folders)
