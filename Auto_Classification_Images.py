@@ -1,7 +1,7 @@
-import os
+import json
+import os, re
 import shutil
 import random
-import json
 
 def distinguish_json_image(file_name):
     """区分JSON文件和图像文件"""
@@ -35,39 +35,55 @@ dest_folder_names = {
 class InvalidDestinationFolderCount(ValueError):
     pass
 
-def create_dest_folders(num_dest_folders, dest_folder_path):
+def Create_top_level_folder(label_name_folders_value):
+    """读取输入的路径"""
+    label_name_folders_input = re.sub(r'[\/:*?"<>|]', '_', label_name_folders_value)
+    # 去除末尾的空格和点号
+    label_name_folders_input = label_name_folders_input.strip().rstrip('.')
+    # 将连续的点号替换为单个点号
+    label_name_folders_input = re.sub(r'\.+', '.', label_name_folders_input)
+    # 将文件名限制在合理的长度范围内
+    label_name_folders_input = "./asset/init/"+ label_name_folders_input[:255]
+
+    return label_name_folders_input
+
+def create_dest_folders(num_dest_folders, top_level_folder):
     dest_folders = []
     for folder_name in dest_folder_names[num_dest_folders]:
-        folder_path = os.path.join(dest_folder_path, folder_name)
+        folder_path = os.path.join(top_level_folder, folder_name)
         os.makedirs(folder_path, exist_ok=True)
         dest_folders.append(folder_path)
     return dest_folders
 
-def split_images(src_folder, dest_folder_path, num_dest_folders, progress_callback=None):
+def split_images(src_folder, label_name_folders, num_folders, update_progress=None ):
     """
     根据数据计算分类
     """
-    num_folders = read_num(num_dest_folders)
-    if num_folders is None:
-        return
-
     if num_folders < 1 or num_folders > 4:
-        raise InvalidDestinationFolderCount("目标文件夹数量必须在 1 到 4 之间.")
+        raise ValueError("目标文件夹数量必须在 1 到 4 之间.")
 
-    dest_folders = create_dest_folders(num_folders, dest_folder_path)
-
-    total_files = len(os.listdir(src_folder))
-    current_progress = 0
+    dest_folders = create_dest_folders(num_folders, label_name_folders)
 
     image_files = [f for f in os.listdir(src_folder) if distinguish_json_image(f) == "image"]
-    json_files = [f for f in os.listdir(src_folder) if distinguish_json_image(f) == "json"]
+    total_image_files = len(image_files)
 
+    # 按照给定的 num_folders 计算每个文件夹应该有的文件数量
+    files_per_folder = total_image_files // num_folders
+    remaining_files = total_image_files % num_folders
+
+    # 将图像文件分配到目标文件夹
     for i, file_name in enumerate(image_files):
+        dest_folder_index = i // files_per_folder
+        if dest_folder_index >= num_folders:
+            # 如果剩余文件不足一个完整的文件夹,则随机分配到目标文件夹
+            dest_folder_index = random.randint(0, num_folders - 1)
+        dest_folder = dest_folders[dest_folder_index]
         src_path = os.path.join(src_folder, file_name)
-        dest_folder = dest_folders[i // (len(image_files) // num_folders)]
         dest_path = os.path.join(dest_folder, file_name)
         shutil.copy(src_path, dest_path)
 
+    # 处理 JSON 文件
+    json_files = [f for f in os.listdir(src_folder) if distinguish_json_image(f) == "json"]
     for file_name in json_files:
         src_path = os.path.join(src_folder, file_name)
         for image_file in image_files:
@@ -80,10 +96,7 @@ def split_images(src_folder, dest_folder_path, num_dest_folders, progress_callba
                         shutil.copy(src_path, dest_path)
                         break
 
-    current_progress = total_files
-    if progress_callback:
-        progress_callback(100)
-    print(f"图像文件和JSON文件已成功分割到 {dest_folder_path}中的{num_folders} 个文件夹中.")
+    print(f"图像文件和JSON文件已成功分割到:中的{num_folders} 个文件夹中.")
 def create_copy(src_folder, dest_folder_path, num_dest_folders):
     """创建文件夹并分配图像"""
     split_images(src_folder, dest_folder_path, num_dest_folders)

@@ -2,15 +2,17 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, \
     QWidget, QTextEdit, QHBoxLayout, QProgressBar
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QTimer
-from Auto_Classification_Images import split_images
+from Auto_Classification_Images import split_images, Create_top_level_folder
 
 class AutoClassificationImage(QMainWindow):
     folder_dropped = pyqtSignal(str)
     num_folders_entered = pyqtSignal(int)
+    label_name_folders_entered = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.label_name_folders = None  # 在构造函数中初始化
 
     def initUI(self):
         self.setWindowTitle("Auto Classification Image")
@@ -20,7 +22,7 @@ class AutoClassificationImage(QMainWindow):
         self.src_folder_label = QLabel("将文件夹拖入到此区域:")
         self.src_folder_label.setStyleSheet("font-weight: bold; font-size: 20px;")
         self.src_folder_text = QLabel()
-        self.src_folder_text.setFixedHeight(160)
+        self.src_folder_text.setFixedHeight(80)
         self.src_folder_text.setAcceptDrops(True)
         self.src_folder_text.setAlignment(Qt.AlignCenter)
         self.src_folder_text.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc; padding: 20px;")
@@ -36,6 +38,15 @@ class AutoClassificationImage(QMainWindow):
         self.num_folders_input = QLineEdit()
         self.num_folders_layout.addWidget(self.num_folders_input)
 
+        self.main_layout = QVBoxLayout()
+        self.label_name_folders_layout = QHBoxLayout()
+
+        self.label_name_folders_label = QLabel("请输入目标文件夹名称:")
+        self.label_name_folders_label.setStyleSheet("font-weight: bold; font-size: 20px;")
+        self.label_name_folders_layout.addWidget(self.label_name_folders_label)
+        self.label_name_folders_input = QLineEdit()
+        self.label_name_folders_layout.addWidget(self.label_name_folders_input)
+
         self.start_button = QPushButton("开始分类")
         self.start_button.setFixedHeight(80)
         self.start_button.clicked.connect(self.start_classification)
@@ -49,6 +60,7 @@ class AutoClassificationImage(QMainWindow):
         self.main_layout.addWidget(self.src_folder_label)
         self.main_layout.addWidget(self.src_folder_text)
         self.main_layout.addLayout(self.num_folders_layout)
+        self.main_layout.addLayout(self.label_name_folders_layout)
         self.main_layout.addWidget(self.start_button)
         self.main_layout.addWidget(self.progress_bar)
         self.main_layout.addWidget(self.log_text)
@@ -56,6 +68,7 @@ class AutoClassificationImage(QMainWindow):
         central_widget = QWidget()
         central_widget.setLayout(self.main_layout)
         self.setCentralWidget(central_widget)
+
 
     def drag_enter_event(self, event):
         if event.mimeData().hasUrls():
@@ -71,8 +84,11 @@ class AutoClassificationImage(QMainWindow):
             self.folder_dropped.emit(src_folder)
 
     def start_classification(self):
+
         src_folder = self.src_folder_text.text()
         num_folders = int(self.num_folders_input.text())
+        label_name_folders_value = self.label_name_folders_input.text()
+
         if src_folder and num_folders > 0:
             self.num_folders_entered.emit(num_folders)
 
@@ -83,12 +99,13 @@ class AutoClassificationImage(QMainWindow):
             self.timer.timeout.connect(self.update_progress)
             self.timer.start()
 
-            split_images(src_folder, "assit/init/output_folders", num_folders, self.update_progress)
+            top_level_folder =Create_top_level_folder(label_name_folders_value)
+            split_images(src_folder, top_level_folder, num_folders, self.update_progress)
 
             self.timer.stop()
             self.progress_bar.setValue(100)
             self.log_text.append("图像分类完成!\n")
-            self.log_text.append("文件已存储至：assit/init/output_folders")
+            self.log_text.append(f"文件已存储至：{top_level_folder}")
         else:
             self.log_text.append("请输入有效的源文件夹和目标文件夹数量。")
 
@@ -98,6 +115,6 @@ class AutoClassificationImage(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = AutoClassificationImage()
-    window.setWindowTitle(window.windowTitle() + "------Version0.0.2")
+    window.setWindowTitle(window.windowTitle() + "------Version0.0.4")
     window.show()
     sys.exit(app.exec_())
