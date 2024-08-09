@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, \
     QWidget, QTextEdit, QHBoxLayout, QProgressBar
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QTimer
 from Auto_Classification_Images import split_images, Create_top_level_folder
